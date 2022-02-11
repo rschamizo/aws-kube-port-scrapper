@@ -29,9 +29,9 @@ kubectl create -f samples/node-port-scrapper-sample
 This executes the analysis, and returns the json with the required information in the logs. It uses a shell script, on top of an alpine image, and with the help of packages like 'jq', 'sed' builds the information as required.
 For more information visit link:https://antora-rschamizo.s3.eu-west-3.amazonaws.com/aws-kube-port-scrapper/0.1/node-port-scrapper.html[Node Port Scrapper]
 
-Se pueden excluir algunos puertos del reporte simplemente añadiendo dicho puerto a la variable de entorno **WHITE_LIST_PORT_STRING**, estando cada puerto separado por un espacio.
+Some ports can be excluded from the report by simply adding that port to the **WHITE_LIST_PORT_STRING** environment variable, each port being separated by a space.
 
-El comando que permite extraer la informacion de los puertos abiertos es el siguiente:
+The command that allows to extract the information of the open ports is the following:
 
 [source,bash]
 ....
