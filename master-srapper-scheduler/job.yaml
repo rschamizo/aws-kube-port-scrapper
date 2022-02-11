@@ -1,0 +1,36 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: sample-job-node-port-scrapper
+spec:
+  template:
+    spec:
+      containers:
+        - command: ["/bin/sh"]
+          args: ["-c", "nsenter --target '1' --mount --uts --ipc --net --pid < scrap-ports.sh"]
+          image: <node_port_image>
+          imagePullPolicy: Always
+          name: node-port-scrapper
+          env:
+            - name: WHITE_LIST_PORT_STRING
+              value: "<white_list_port_token>"
+          resources: {}
+          securityContext:
+            privileged: true
+          stdin: true
+          stdinOnce: true
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          tty: true
+      dnsPolicy: ClusterFirst
+      enableServiceLinks: true
+      hostNetwork: true
+      hostPID: true
+      preemptionPolicy: PreemptLowerPriority
+      priority: 0
+      restartPolicy: Never
+      securityContext: {}
+      serviceAccount: default
+      serviceAccountName: default
+      terminationGracePeriodSeconds: 30
+  backoffLimit: 4

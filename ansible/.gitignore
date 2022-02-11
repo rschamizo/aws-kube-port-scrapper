@@ -1,0 +1,8 @@
+.vault_pass
+profiles/*/encrypted_files/*
+!profiles/*/encrypted_files/.keep
+group_vars/all/*
+!group_vars/all/.keep
+vaults_passwords/*
+!vaults_passwords/.keep
+vars/vault_*

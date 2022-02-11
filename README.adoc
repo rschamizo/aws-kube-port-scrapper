@@ -1,0 +1,96 @@
+= AWS Kube Port Scrapper
+
+The following project aims to continuously obtain a report with the open ports of the nodes of an EKS cluster. The report can be exported to an s3 bucket, or to a DynamoDB table. An alert system is also carried out with prometheus and the Sns.
+
+The complete and detailed documentation is built with link:https://antora-rschamizo.s3.eu-west-3.amazonaws.com/index.html[Antora Docs]. This README provides a quick overview of the project, and ways to partially implement the features. It also assumes certain knowledge about the topics covered. For the complete process visit link:https://antora-rschamizo.s3.eu-west-3.amazonaws.com/aws-kube-port-scrapper/0.1/full-execution.html[Scrapper Full Execution]
+
+== Architecture
+
+The architecture is based on a main element, the cronjob, which will create jobs in each of the nodes to obtain said information. That is, there are two separate applications, on the one hand the 'master-scrapper-scheduler' and on the other hand the 'node-port-scrapper'. The first one has the aws cli, as well as kubectl, and the credentials for both services. In this way it is able to create resources within the cluster.
+
+The second is able to access the node and obtain the desired information. Once the 'node-port-scrapper' get the report from each node, the 'scheduler' gathers all the information, and uploads it to s3 and DynamoDB.
+
+The project consists of the following modules:
+* master-scrapper-scheduler -> Orchestrator application cronjob
+* node-port-scrapper -> Application that extracts the report of each node
+* terraform -> Terraform module to initialize the necessary resources in AWS
+* ansible -> Orchestrator of all the flow, and of the creation of resources in kubernetes
+* alerting -> Prometheus and Sns based alerting
+
+== Quickstart
+
+The fastest way to check the operation is to execute the following command:
+
+[source,bash]
+----
+kubectl create -f samples/node-port-scrapper-sample
+----
+
+This executes the analysis, and returns the json with the required information in the logs. It uses a shell script, on top of an alpine image, and with the help of packages like 'jq', 'sed' builds the information as required.
+For more information visit link:https://antora-rschamizo.s3.eu-west-3.amazonaws.com/aws-kube-port-scrapper/0.1/node-port-scrapper.html[Node Port Scrapper]
+
+Se pueden excluir algunos puertos del reporte simplemente añadiendo dicho puerto a la variable de entorno **WHITE_LIST_PORT_STRING**, estando cada puerto separado por un espacio.
+
+El comando que permite extraer la informacion de los puertos abiertos es el siguiente:
+
+[source,bash]
+....
+netstat -tulpnl | grep LISTEN 
+....
+
+== Build Cronjob Application
+
+La aplicacion necesita credenciales de un usuario de AWS para funcionar. Despues permite elegir si subir el reporte a s3 y a una tabla de DynamoDB. Estas caracteristicas son opcionales, y se pueden deshabilitar. En el caso de habilitarse deben estar en la misma region todos los recursos.
+
+Antes de nada tenemos que crear el secreto con el fichero de credenciales de aws que sera montado en los pods. El usuario debe tener permisos tanto en los recursos de aws, como para interactuar con el cluster de kubernetes. Por ejemplo, en la forma mas sencilla (No es recomendable usar el usuario personal, es mejor crear un usuario con los permisos adecuados. El modulo de terraform lo crea con los permisos adecuados)
+
+[source,bash]
+....
+kubectl create secret generic aws-credentials --from-file=credentials=$HOME/.aws/credentials
+....
+
+Some ports can be excluded from the report by simply adding that port to the **WHITE_LIST_PORT_STRING** environment variable, each port being separated by a space.
+
+[source,bash]
+....
+kubectl create -f samples/cronjob-sample.yaml
+....
+
+== Monitoring and Alerting
+
+An alert system based on prometheus and AWS SNS have been created. First of all, the corresponding namespace must be created, for example 'monitoring'
+
+[source,bash]
+....
+kubectl create ns monitoring
+....
+
+If we want to enable sns notifications, we must first create the alertmanager configuration file.
+
+There is an example in samples/alertmanager.yaml, where we should insert the AWS user credentials, before creating the secret, and configure the Sns topic (which is assumed previously created manually or with the terraform module)
+
+[source,bash]
+....
+kubectl create secret generic alertmanager-main -n monitoring --from-file=alertmanager.yaml=samples/alertmanager.yaml
+....
+
+The installation of Prometheus can be done through helm with the following command:
+
+[source,bash]
+....
+helm install -n monitoring prometheus-k8s prometheus-community/prometheus --version 15.1.3 --values samples/prometheus-helm-values.yaml
+....
+
+The personalized alerts of the project are already included here. They are most easily found in samples/alertmanager-scrapperRules.yaml. These are in CRD format that is used by the prometheus-operator. You can choose to install the version with the operator with the following command (if not installed with helm)
+
+[source,bash]
+....
+kubectl create -f samples/prometheus-operator-mode
+....
+
+5 alerts have been defined, which can be seen in the alerts tab if you access prometheus
+
+[source,bash]
+....
+kubectl port-forward -n monitoring svc/prometheus-k8s-server 9090:80
+....

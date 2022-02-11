@@ -1,0 +1,33 @@
+- name: Scrapper playbook
+  hosts: controlmachine
+
+  tasks:
+  - name: Main Playbook >> Vars Ansible Managment
+    include_vars: vars/ansible_managment.yaml
+
+  - name: Main Playbook >> Vars Commons
+    include_vars: vars/commons.yaml
+
+  - name: Main Playbook >> Vars Globals
+    include_vars: vars/globals.yaml
+
+  - name: Main Playbook >> Vault Vars personal
+    include_vars: vars/vault_personal.yaml
+    no_log: True
+    when: anm__vaults_enabled.personal
+
+  - name: Main Playbook >> Rol terraform-scrapper - Load vars
+    include_vars: vars/terraform_scrapper.yaml
+
+  - name: Main Playbook >> Rol terraform-scrapper - Execute
+    include_role:
+      name: terraform-scrapper
+
+  - name: Main Playbook >> Rol port-scrapper - Load vars
+    include_vars: vars/port_scrapper.yaml
+    
+  - name: Main Playbook >> Rol port-scrapper - Execute
+    include_role:
+      name: port-scrapper
+
+

@@ -1,0 +1,4 @@
+- userarn: arn:aws:iam::{{ pts__aws_account_id }}:user/{{ pts__aws_username }}
+  username: scrapper
+  groups:
+    - {{ pts__kube_permissions_group }}

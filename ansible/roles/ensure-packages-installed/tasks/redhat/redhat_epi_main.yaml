@@ -1,0 +1,26 @@
+
+- name: Infra - Register System and subscribe
+  community.general.redhat_subscription:
+    state: present
+    username: "{{ epi__rhel_user }}"
+    password: "{{ epi__vlt__rhel_password }}"
+    auto_attach: true
+  register: system
+  when: ansible_distribution == "Red Hat Enterprise Linux"
+
+- name: Infra - Install packages - Centos
+  include_tasks: redhat7/commons.yaml
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version|int >= 7
+  register: epi__os_supported
+
+- name: Infra - Install packages - Fedora 33
+  include_tasks: redhat8/commons.yaml
+  when: ansible_distribution == "Fedora" and ansible_distribution_major_version|int >= 33
+  register: epi__os_supported
+
+- name: Infra - Install packages - System not supported
+  fail: msg="This System is not supported"
+  when: |
+    (ansible_distribution == "CentOS" and ansible_distribution_major_version|int < 7) or
+    (ansible_distribution == "Fedora" and ansible_distribution_major_version|int < 33) or
+    (ansible_distribution != "Fedora" and ansible_distribution != "CentOS")

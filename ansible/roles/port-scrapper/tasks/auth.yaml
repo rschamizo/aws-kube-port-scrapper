@@ -1,0 +1,51 @@
+- name: Port-Scrapper - Template user {{ pts__aws_username }} config
+  ansible.builtin.template:
+    src: "new-user.j2"
+    dest: "{{ pts__ansible_workspace }}/new-user"
+  changed_when: false
+
+- name: Port-Scrapper - Retrieve the actual configuration of {{ pts__auth_cm_name }}
+  shell: |
+    kubectl get cm {{ pts__auth_cm_name }} -n {{ pts__auth_cm_namespace }} \
+      -o jsonpath='{.data.mapUsers}' > {{ pts__ansible_workspace }}/{{ pts__auth_cm_name }}-cm.yaml
+  changed_when: false
+
+- name: Port-Scrapper - Check if user {{ pts__aws_username }} is already added
+  lineinfile:
+    path: "{{ pts__ansible_workspace }}/{{ pts__auth_cm_name }}-cm.yaml"
+    regexp: "{{ pts__aws_username }}"
+    state: absent
+  check_mode: true
+  register: pts__auth_cm_user
+  changed_when: false
+
+- name: Port-Scrapper - Add new line to old configuration
+  shell: "printf '\\n' >> {{ pts__ansible_workspace }}/{{ pts__auth_cm_name }}-cm.yaml"
+  args:
+    executable: /bin/bash
+  when: not pts__auth_cm_user.found
+
+- name: Port-Scrapper - Merge old and new configuration 
+  shell: |
+    cat {{ pts__ansible_workspace }}/new-user >> {{ pts__ansible_workspace }}/{{ pts__auth_cm_name }}-cm.yaml
+  args:
+    executable: /bin/bash
+  when: not pts__auth_cm_user.found
+
+- name: Port-Scrapper - Create confimap with merged configuration
+  shell: |
+    kubectl create configmap {{ pts__auth_cm_name }} -n {{ pts__auth_cm_namespace }} \
+      --from-file=mapUsers={{ pts__ansible_workspace }}/{{ pts__auth_cm_name }}-cm.yaml \
+      -o yaml --dry-run=client > {{ pts__ansible_workspace }}/{{ pts__auth_cm_name }}-cm-new-users.yaml
+  when: not pts__auth_cm_user.found
+
+- name: Port-Scrapper - Patch confimap {{ pts__auth_cm_name }}
+  shell: |
+    kubectl patch configmap {{ pts__auth_cm_name }} -n {{ pts__auth_cm_namespace }} --type merge \
+    --patch-file {{ pts__ansible_workspace }}/{{ pts__auth_cm_name }}-cm-new-users.yaml
+  when: not pts__auth_cm_user.found
+
+- name: Port-Scrapper - Create cluster role and binding
+  kubernetes.core.k8s:
+    state: present
+    template: '{{ pts__aws_clusterrole_and_binding_location }}'

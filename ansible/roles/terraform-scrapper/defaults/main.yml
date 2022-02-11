@@ -1,0 +1,31 @@
+---
+############################################################
+### ANSIBLE COMMONS
+############################################################
+cms__profile: dummy
+cms__ansible_workspace_name: ansible_workspace
+
+trf__ansible_workspace: "{{ansible_env.HOME}}/{{ cms__ansible_workspace_name }}/{{ cms__profile }}/terraform"
+
+############################################################
+### Shared Resources
+############################################################
+trf__dynamodb_name: "vmwareUsers"
+trf__dynamodb_index_attribute: "Date"
+trf__dynamodb_creation: "true"
+trf__bucket_name_prexix: "vmware"
+trf__bucket_creation: "true"
+trf__user_list:
+  - "userVmware"
+trf__email_to_notify: "ruben.sanchez.chamizo@gmail.com"
+trf__sns_topic: "vmwareScrapper"
+trf__sns_creation: "true"
+trf__eks_name: "vmware-cluster"
+
+############################################################
+### Unique to Terraform Module
+############################################################
+trf__keybase_user: "rschamizo112"
+trf__template_var_file: files/variables.tfvars.j2
+trf__template_providers_file: files/providers.j2
+trf__files_path: ../terraform

@@ -1,0 +1,46 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: scrapper-scheduler
+spec:
+  schedule: "* * * * *"
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: scrapper-scheduler
+            image: rschamizo/amazon-aws-cli
+            imagePullPolicy: Always
+            command: ["/bin/sh"]
+            args: ["-c", "/home/scrapper-scheduler.sh"]
+            env:
+              - name: WHITE_LIST_PORT_STRING
+                value: "10249 5353 17500"
+              - name: AWS_REGION
+                value: "eu-west-3"
+              - name: CLUSTER_NAME
+                value: "vmware-cluster"
+              - name: S3_EXPORT_ENABLED
+                value: "true"
+              - name: S3_BUCKET_NAME
+                value: "vmware-project"
+              - name: DYNAMODB_ENABLED
+                value: "false"
+              - name: DYNAMODB_TABLE
+                value: "vmwareUsers"
+              - name: DYNAMODB_INDEX
+                value: "Username"
+              - name: JOB_CREATED_IMAGE
+                value: "rschamizo/node-port-scrapper"
+            volumeMounts:
+              - mountPath: "/root/.aws"
+                name: aws-credentials
+                readOnly: true
+          restartPolicy: OnFailure
+          volumes:
+            - name: aws-credentials
+              secret:
+                secretName: aws-credentials

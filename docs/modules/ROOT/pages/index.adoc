@@ -1,0 +1,11 @@
+= Introduction
+
+The following project aims to continuously obtain a report with the open ports of the nodes of an EKS cluster in AWS. The report can be exported to an s3 bucket, or to a DynamoDB table. An alert system is also carried out with prometheus and the Sns.
+
+To do this, a cronjob will be deployed, which will create jobs in each of the nodes to obtain said information. In other words, there are two separate applications, on the one hand the 'scheduler' and on the other hand the 'node-scrapper'. The first one has the aws cli, as well as kubectl, and the credentials for both services. The second is able to access the node and obtain the information. Once the 'node-scrappers' get the report from each node, the 'scheduler' gathers all the information, and uploads it to s3 and DynamoDB.
+
+image::vmware.drawio.png[]
+
+
+
+

@@ -1,0 +1,17 @@
+
+- name:  Infra - Create ansible workspace
+  ansible.builtin.file:
+    path: "{{ epi__ansible_workspace }}"
+    state: directory
+    recurse: yes
+
+- name: Infra - Install packages - RedHat Family
+  include_tasks: redhat/redhat_epi_main.yaml
+  when: ansible_os_family == "RedHat"
+
+- name: Infra - Install packages - Debian Family
+  include_tasks: debian/debian_epi_main.yaml
+  when: ansible_os_family == "Debian"
+
+- name: Infra - Install packages - All Linux
+  include_tasks: linux/linux_epi.yaml

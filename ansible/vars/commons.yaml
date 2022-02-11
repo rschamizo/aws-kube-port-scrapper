@@ -1,0 +1,6 @@
+
+############################################################
+### Commons Vars
+############################################################
+cms__profile: scrapper
+cms__ansible_workspace_name: ansible_workspace

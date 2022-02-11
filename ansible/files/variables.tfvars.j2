@@ -1,0 +1,17 @@
+ProjectName="vmware"
+
+DynamoTable="{{ trf__dynamodb_name }}"
+DynamoIndexAttribute="{{ trf__dynamodb_index_attribute }}"
+DynamoCreation={{trf__dynamodb_creation }}
+
+BucketNamePrefix="{{ trf__bucket_name_prexix }}"
+BucketCreation={{ trf__bucket_creation }}
+
+KeybaseUser="{{ trf__keybase_user }}"
+Userlist={{ trf__user_list | regex_replace('\\\'', '"')  }}
+
+EmailtoNotify="{{ trf__email_to_notify }}"
+SnsTopic="{{ trf__sns_topic }}"
+SnsCreation="{{ trf__sns_creation | regex_replace('\\\'', '"')}}"
+
+EksName="{{ trf__eks_name }}"

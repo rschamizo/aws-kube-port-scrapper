@@ -1,0 +1,28 @@
+
+trf__ansible_workspace: "{{ansible_env.HOME}}/{{ cms__ansible_workspace_name }}/{{ cms__profile }}/terraform"
+
+############################################################
+### Shared Resources
+############################################################
+trf__dynamodb_name: "{{ glb__dynamodb_name }}"
+trf__dynamodb_index_attribute: "{{ glb__dynamodb_index_attribute }}"
+trf__dynamodb_creation: "{{ glb__dynamodb_enabled | lower }}"
+trf__bucket_name_prexix: "{{ glb__bucket_name_prexix }}"
+trf__bucket_creation: "{{ glb__bucket_creation | lower }}"
+trf__user_list: "{{ glb__aws_user_list }}"
+trf__email_to_notify: "{{ glb__email_to_notify }}"
+trf__sns_topic: "{{ glb__sns_topic }}"
+trf__sns_creation: "{{ glb__sns_enabled | lower }}"
+trf__eks_name: "{{ glb__eks_name }}"
+trf__aws_region: "{{ glb__aws_region }}"
+trf__aws_profile: "{{ glb__aws_profile }}"
+
+############################################################
+### Unique to Terraform Module
+############################################################
+trf__keybase_user: "rschamizo112"
+trf__template_var_file: files/variables.tfvars.j2
+trf__template_providers_file: files/providers.j2
+trf__files_path: ../terraform
+
+

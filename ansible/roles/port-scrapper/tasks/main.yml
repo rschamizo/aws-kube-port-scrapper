@@ -1,0 +1,69 @@
+---
+
+- name:  Port-Scrapper - Create ansible workspace
+  ansible.builtin.file:
+    path: "{{ pts__ansible_workspace }}"
+    state: directory
+    recurse: yes
+
+- name: Port-Scrapper - Buildah login to image repositories
+  shell: |
+    buildah login \
+      --username {{ pts__registry.username }} \
+      --password {{ pts__vlt__registry__password }} \
+      {{ pts__registry.domain }}
+  changed_when: false
+  when: pts__enabled_build_images
+
+- name: Port-Scrapper - Build and Push images
+  include_tasks: build-images.yaml
+  with_items:
+    - "{{ pts__port__scrapper }}"
+    - "{{ pts__scheduler_scrapper }}"
+  when: pts__enabled_build_images
+
+- name: Port-Scrapper - Install alerting system
+  include_tasks: "alerting.yaml"
+  when: pts__kube_alerting_enabled
+
+- name: Port-Scrapper - Install namespace {{ pts__scrapper_namespace }}
+  kubernetes.core.k8s:
+    name: "{{ pts__scrapper_namespace }}"
+    api_version: v1
+    kind: Namespace
+    state: present
+
+- name: Port-Scrapper - Template aws credentials
+  ansible.builtin.template:
+    src: "{{ pts__aws_credentials_location }}"
+    dest: "{{ pts__ansible_workspace }}/aws_credentials_templated"
+
+- name: Port-Scrapper - Create secret aws credentials from templated file
+  shell: |
+    kubectl create secret generic {{ pts__aws_secret_name }} \
+      --from-file=credentials={{ pts__ansible_workspace }}/aws_credentials_templated \
+      -n {{ pts__scrapper_namespace }} --dry-run=client \
+      -o yaml > {{ pts__ansible_workspace }}/secret-aws_credentials.yaml
+  changed_when: false
+
+- name: Port-Scrapper - Create aws credentials secrets
+  kubernetes.core.k8s:
+    state: present
+    namespace: "{{ pts__scrapper_namespace }}"
+    src: "{{ pts__ansible_workspace }}/secret-aws_credentials.yaml"
+
+- name: Port-Scrapper - Include tasks to give iam user access to EKS
+  include_tasks: "auth.yaml"
+
+- name: Port-Scrapper - Template cronjob manifiest
+  ansible.builtin.template:
+    src: "{{ pts__aws_cronjob_location }}"
+    dest: "{{ pts__ansible_workspace }}/cronjob"
+
+- name: Port-Scrapper - Deploy cronjob
+  kubernetes.core.k8s:
+    state: present
+    namespace: "{{ pts__scrapper_namespace }}"
+    template: '{{ pts__aws_cronjob_location }}'
+
+

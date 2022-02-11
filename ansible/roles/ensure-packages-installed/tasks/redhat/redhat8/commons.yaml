@@ -1,0 +1,6 @@
+
+- name: Infra - Install packages - Ensure redhat8 os packages are installed
+  dnf:
+    name: "{{ item }}"
+    state: latest
+  loop: "{{ epi__redhat_so_packages }}"

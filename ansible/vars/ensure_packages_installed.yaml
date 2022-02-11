@@ -1,0 +1,12 @@
+
+epi__rhel_user: "rubensan112@gmail.com"
+
+epi__ansible_workspace: "{{ansible_env.HOME}}/{{ cms__ansible_workspace_name }}/{{ cms__profile }}/ensure_packages_installed"
+
+epi__redhat_so_packages:
+  - git
+  - buildah-1*
+
+epi__debian_so_packages:
+  - git
+  - buildah

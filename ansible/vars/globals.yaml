@@ -1,0 +1,19 @@
+
+############################################################
+### Globals Vars
+############################################################
+glb__dynamodb_name: "scrapperReport"
+glb__dynamodb_index_attribute: "Date"
+glb__dynamodb_enabled: true
+glb__bucket_name_prexix: "scrapper-report"
+glb__bucket_creation: true
+glb__aws_user_list:
+  - "userScrapper"
+glb__email_to_notify: "ruben.sanchez.chamizo@gmail.com"
+glb__sns_topic: "scrapperTopic"
+glb__sns_enabled: true
+glb__eks_name: "scrapper2"
+glb__aws_region: "eu-west-3"
+glb__aws_profile: "default"
+glb__alerting_enabled: true
+

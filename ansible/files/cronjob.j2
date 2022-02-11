@@ -1,0 +1,46 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: scrapper-scheduler
+spec:
+  schedule: "{{ pts__cronjob_schedule }}"
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: scrapper-scheduler
+            image: {{ pts__scheduler_scrapper.image.name }}:{{ pts__scheduler_scrapper.image.tag }}
+            imagePullPolicy: Always
+            command: ["/bin/sh"]
+            args: ["-c", "/home/scrapper-scheduler.sh"]
+            env:
+              - name: WHITE_LIST_PORT_STRING
+                value: "{{ pts__white_list_ports }}"
+              - name: AWS_REGION
+                value: "{{ pts__aws_region }}"
+              - name: CLUSTER_NAME
+                value: "{{ pts__eks_name }}"
+              - name: S3_EXPORT_ENABLED
+                value: "{{ pts__s3_enabled | lower }}"
+              - name: S3_BUCKET_NAME
+                value: "{{ pts__aws_bucket_id }}"
+              - name: DYNAMODB_ENABLED
+                value: "{{ pts__dynamodb_enabled | lower }}"
+              - name: DYNAMODB_TABLE
+                value: "{{ pts__dynamodb_table }}"
+              - name: DYNAMODB_INDEX
+                value: "{{ pts__dynamodb_index }}"
+              - name: JOB_CREATED_IMAGE
+                value: "{{ pts__port__scrapper.image.name }}:{{ pts__port__scrapper.image.tag }}"
+            volumeMounts:
+              - mountPath: "/root/.aws"
+                name: aws-credentials
+                readOnly: true
+          restartPolicy: OnFailure
+          volumes:
+            - name: aws-credentials
+              secret:
+                secretName: {{ pts__aws_secret_name }}

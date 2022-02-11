@@ -1,0 +1,67 @@
+
+pts__ansible_workspace: "{{ansible_env.HOME}}/{{ cms__ansible_workspace_name }}/{{ cms__profile }}/port_scrapper"
+
+############################################################
+### Dynamic Generated Vars
+############################################################
+pts__aws_access_key: "{{ dyn__access_key_id }}"
+pts__aws_secret_key: "{{ dyn__access_key }}"
+pts__aws_topic_arn: "{{ dyn__sns_topic_arn }}"
+pts__aws_bucket_id: "{{ dyn__bucket_id }}"
+pts__aws_account_id: "{{ dyn__account_id }}"
+
+############################################################
+### Docker Image 
+############################################################
+pts__enabled_build_images: "{{ anm__roles_enabled.port_scrapper.build_and_push_enabled }}"
+
+pts__registry: 
+  domain: docker.io
+  username: rschamizo
+
+pts__port__scrapper:
+  image:
+    name: rschamizo/node-port-scrapper
+    tag: latest
+  dockerfile: Dockerfile
+  filesPath: "../node-port-scrapper"
+
+pts__scheduler_scrapper:
+  image:
+    name: rschamizo/scheduler-scrapper
+    tag: latest
+  dockerfile: Dockerfile
+  filesPath: "../master-srapper-scheduler"
+
+############################################################
+### Scrapper Execution Settings
+############################################################
+pts__aws_region: "{{ glb__aws_region }}"
+pts__eks_name: "{{ glb__eks_name }}"
+pts__aws_username: "{{ glb__aws_user_list[0] }}"
+pts__dynamodb_enabled: "{{ glb__dynamodb_enabled }}"
+pts__dynamodb_table: "{{ glb__dynamodb_name }}"
+pts__dynamodb_index: "{{ glb__dynamodb_index_attribute }}"
+pts__s3_enabled: "{{ glb__bucket_creation }}"
+pts__scrapper_namespace: scrapper
+pts__kube_permissions_group: scrapper
+pts__auth_cm_name: aws-auth
+pts__auth_cm_namespace: kube-system
+pts__aws_clusterrole_and_binding_location: files/kube-role-and-binding.j2
+pts__aws_cronjob_location: files/cronjob.j2
+pts__cronjob_schedule: "*/3 * * * *"
+pts__white_list_ports: "10249 5353"
+
+############################################################
+### Alerting and Monitoring Settings
+############################################################
+pts__kube_alerting_enabled: "{{ glb__alerting_enabled }}"
+pts__helm_chart_version_prometheus: 15.1.3
+pts__alertmanager_conf_location: files/alertmanager-conf.j2
+pts__aws_credentials_location: files/aws-credentiales.j2
+pts__monitoring_namespace: monitoring
+pts__alertmanager_secret_name: "alertmanager-main"
+pts__aws_secret_name: "aws-credentials"
+
+
+

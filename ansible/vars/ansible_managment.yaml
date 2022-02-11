@@ -1,0 +1,16 @@
+
+############################################################
+### Ansible Managment Vars
+############################################################
+anm__tasks_enabled:
+  ensure_packages_installed: false
+  
+anm__roles_enabled:
+  terraform_scrapper: 
+    uninstall: false
+  port_scrapper:
+    uninstall: false
+    build_and_push_enabled: false
+
+anm__vaults_enabled:
+  personal: true

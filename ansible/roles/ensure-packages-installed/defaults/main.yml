@@ -1,0 +1,69 @@
+---
+# defaults file for tasks
+
+############################################################
+### ANSIBLE COMMONS
+############################################################
+
+cms__profile: dummy
+cms__ansible_workspace_name: ansible_workspace
+
+############################################################
+### ENSURE PACKAGES INSTALLED
+############################################################
+
+####################
+## VAULT VARS
+####################
+
+epi__vlt__rhel_password: dummypassword
+
+####################
+## VARS
+####################
+
+epi__rhel_user: dummyuser
+
+epi__ansible_workspace: "{{ansible_env.HOME}}/{{ cms__ansible_workspace_name }}/{{ cms__profile }}/ensure_packages_installed"
+
+epi__kubectl:
+  enabled: false
+  version: 1.21.0
+
+epi__azure_cli:
+  enabled: false
+  version: 2.28.0
+
+epi__kubelogin:
+  enabled: false
+  version: 0.0.10
+
+epi__helm:
+  enabled: false
+  version: 3
+
+epi__openshift_installer:
+  enabled: false
+  version: 4
+
+epi__openshift_oc:
+  enabled: false
+  version: 4
+
+epi__register_system_rhel: true
+
+# Direct Url retrieves
+epi__helm3_url: "https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3"
+epi__kubelogin_url: "https://github.com/Azure/kubelogin/releases/download/v{{ epi__kubelogin.version }}/kubelogin-linux-amd64.zip"
+epi__openshift4_installer_url: https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/stable/openshift-install-linux.tar.gz
+epi_openshift4_oc_url: https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/stable/openshift-client-linux.tar.gz
+
+# Keys and Repos URLs
+epi__google_yum_gpgkey: https://packages.cloud.google.com/yum/doc/yum-key.gpg
+epi__google_rpm_package_gpgkey: https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+epi__kubernetes_baseurl: https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
+
+epi__microsoft_rpm_key: https://packages.microsoft.com/keys/microsoft.asc
+epi__microsft_gpgkey: https://packages.microsoft.com/keys/microsoft.asc
+epi__azure_cli_baseurl: https://packages.microsoft.com/yumrepos/azure-cli
+

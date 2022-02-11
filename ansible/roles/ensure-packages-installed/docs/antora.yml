@@ -1,0 +1,19 @@
+name: rol-tasks-infra
+version: '0.1'
+prerelease: '.0'
+title: Rol Tasks Infra
+asciidoc:
+  attributes:
+    source-language: asciidoc@
+    xrefstyle: short@
+    listing-caption: Example@
+    example-caption: false
+    version-node-major: '16'
+    version-node: '16.13.0'
+    version-npm: '8.1.0'
+    url-node-releases: https://nodejs.org/en/about/releases/
+    url-chat: https://antora.zulipchat.com
+    url-repo: https://gitlab.com/antora/antora
+    url-asciidoc: https://docs.asciidoctor.org/asciidoc/latest
+nav:
+- modules/ROOT/nav-start.adoc

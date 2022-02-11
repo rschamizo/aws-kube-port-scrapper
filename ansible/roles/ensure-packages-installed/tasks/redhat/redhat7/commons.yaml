@@ -1,0 +1,6 @@
+
+- name: Infra - Install packages - Ensure redhat7 os packages are installed
+  yum:
+    name: "{{ item }}"
+    state: latest
+  loop: "{{ epi__redhat_so_packages }}"

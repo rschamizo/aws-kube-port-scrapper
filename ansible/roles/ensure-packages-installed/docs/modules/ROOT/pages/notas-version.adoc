@@ -1,0 +1,7 @@
+= Notas de la version {page-component-version}
+:doctype: book
+:page-toclevels: 0
+
+_**Release date:** 2021.11.03
+
+Esta version incluye una primera version que despliegue una aplicacion demo de java en el entorno de desarrollo. Incluye la instalacion de las herramientas Sonarqube, Tekton y Traefik. Tambien incluye una version funcional del generador de pipelines en Tekton con Service Hooks de Azure Devops

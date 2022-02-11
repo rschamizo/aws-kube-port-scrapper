@@ -1,0 +1,97 @@
+- name: Infra - Install packages - Kubelogin
+  block:
+    - name: Infra - Install packages - Download the kubelogin zip archive
+      get_url:
+        url: "{{ epi__kubelogin_url }}"
+        dest: "{{ epi__ansible_workspace }}/kubelogin.zip"
+
+    - name: Infra - Install packages - Create the kubelogin extract folder
+      ansible.builtin.file:
+        path: "{{ epi__ansible_workspace }}/kubelogin"
+        state: directory
+
+    - name: Infra - Install packages - Unzip the kubelogin zip archive
+      ansible.builtin.unarchive:
+        src: "{{ epi__ansible_workspace }}/kubelogin.zip"
+        dest: "{{ epi__ansible_workspace }}/kubelogin"
+
+    - name: Infra - Install packages - Unzip the kubelogin zip archive
+      shell: cp {{ epi__ansible_workspace }}/kubelogin/bin/linux_amd64/kubelogin /usr/bin/kubelogin
+      args:
+        creates: /usr/bin/kubelogin
+  when: epi__kubelogin.enabled
+
+- name: Infra - Install packages - Helm
+  block:
+    - name: Infra - Install packages - Download the helm script
+      get_url:
+        url: "{{ epi__helm3_url }}"
+        dest: "{{ epi__ansible_workspace }}/get_helm.sh"
+        mode: 700
+      when: epi__helm.version == 3
+
+    - name: Infra - Install packages - Execute the helm script
+      ansible.builtin.script: "{{ epi__ansible_workspace }}/get_helm.sh"
+      args:
+        creates: /usr/local/bin/helm
+
+  when: epi__helm.enabled
+
+- name: Infra - Install packages - Openshift Installer
+  block:
+    - name: Infra - Install packages - Download the openshift installation script
+      get_url:
+        url: "{{ epi__openshift4_installer_url }}"
+        dest: "{{ epi__ansible_workspace }}/openshift-install-linux.tar.gz"
+        mode: 700
+      when: epi__openshift_installer.version == 4
+
+    - name: Infra - Install packages - Unzip the Openshift gz archive
+      ansible.builtin.unarchive:
+        src: "{{ epi__ansible_workspace }}/openshift-install-linux.tar.gz"
+        dest: "{{ epi__ansible_workspace }}"
+        remote_src: yes
+      args:
+        creates: "{{ epi__ansible_workspace }}/openshift-install"
+
+    - name: Infra - Install packages - Move installer to /usr/local/bin
+      ansible.builtin.copy:
+        src: "{{ epi__ansible_workspace }}/openshift-install"
+        dest: "/usr/local/bin/openshift-install"
+        remote_src: yes
+        mode: 755
+
+  when: epi__openshift_installer.enabled
+
+- name: Infra - Install packages - Openshift OC
+  block:
+    - name: Infra - Install packages - Download the openshift oc
+      get_url:
+        url: "{{ epi_openshift4_oc_url }}"
+        dest: "{{ epi__ansible_workspace }}/openshift-client-linux.tar.gz"
+        mode: 700
+      when: epi__openshift_oc.version == 4
+
+    - name: Infra - Install packages - Unzip the Openshift gz archive
+      ansible.builtin.unarchive:
+        src: "{{ epi__ansible_workspace }}/openshift-client-linux.tar.gz"
+        dest: "{{ epi__ansible_workspace }}"
+        remote_src: yes
+      args:
+        creates: "{{ epi__ansible_workspace }}/oc"
+
+    - name: Infra - Install packages - Move the oc to /usr/local/bin
+      ansible.builtin.copy:
+        src: "{{ epi__ansible_workspace }}/oc"
+        dest: "/usr/local/bin/oc"
+        remote_src: yes
+        mode: 755
+          
+    - name: Infra - Install packages - Move kubect to /usr/local/bin
+      ansible.builtin.copy:
+        src: "{{ epi__ansible_workspace }}/kubectl"
+        dest: "/usr/local/bin/kubectl"
+        remote_src: yes
+        mode: 755
+
+  when: epi__openshift_oc.enabled

@@ -1,0 +1,40 @@
+- name: Port-Scrapper - Install namespace {{ pts__monitoring_namespace }}
+  kubernetes.core.k8s:
+    name: "{{ pts__monitoring_namespace }}"
+    api_version: v1
+    kind: Namespace
+    state: present
+
+- name: Port-Scrapper -  Template alertmanager.yaml
+  ansible.builtin.template:
+    src: "{{ pts__alertmanager_conf_location }}"
+    dest: "{{ pts__ansible_workspace }}/alertmanager-conf_templated"
+
+- name: Port-Scrapper - Create secret alertmanager.yaml from templated file
+  shell: |
+    kubectl create secret generic {{ pts__alertmanager_secret_name }} \
+      --from-file=alertmanager.yaml={{ pts__ansible_workspace }}/alertmanager-conf_templated \
+      -n {{ pts__monitoring_namespace }} --dry-run=client \
+      -o yaml > {{ pts__ansible_workspace }}/secret-alertmanger-main.yaml
+  changed_when: false
+
+- name: Port-Scrapper - Create {{ pts__alertmanager_secret_name }} secret
+  kubernetes.core.k8s:
+    state: present
+    namespace: "{{ pts__monitoring_namespace }}"
+    src: "{{ pts__ansible_workspace }}/secret-alertmanger-main.yaml"
+
+
+- name: Port-Scrapper - Template Prometheus helm chart values
+  ansible.builtin.template:
+    src: "helm_templates/prometheus.j2"
+    dest: "{{ pts__ansible_workspace }}/prometheus-helm-values.yaml"
+
+- name: Port-Scrapper - Deploy Prometheus helm chart
+  kubernetes.core.helm:
+    name: prometheus-k8s
+    chart_ref: "prometheus-community/prometheus"
+    release_namespace: "{{ pts__monitoring_namespace }}"
+    chart_version: "{{ pts__helm_chart_version_prometheus }}"
+    values_files:
+      - "{{ pts__ansible_workspace }}/prometheus-helm-values.yaml"

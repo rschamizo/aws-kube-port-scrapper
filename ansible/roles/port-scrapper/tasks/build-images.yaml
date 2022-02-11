@@ -1,0 +1,23 @@
+
+- name: Port-Scrapper - Check if image exists
+  shell: |
+    buildah images
+  changed_when: false
+  no_log: True
+  register: pts__port__scrapper__builded
+
+- name: Port-Scrapper - Build and push block
+  block:
+  - name: Port-Scrapper - Build {{ item.image.name }}:{{ item.image.tag }}
+    shell: |
+      buildah bud -f {{ item.dockerfile }} \
+      -t {{ item.image.name }}:{{ item.image.tag }} 
+    args:
+      chdir: "{{ item.filesPath }}"
+
+  - name: Port-Scrapper - Push to {{ pts__registry.domain }}/{{ item.image.name }}:{{ item.image.tag }}
+    shell: |
+      buildah push {{ item.image.name }}:{{ item.image.tag }} \
+        docker://{{ pts__registry.domain }}/{{ item.image.name }}:{{ item.image.tag }}
+
+  when: pts__port__scrapper__builded.stdout regex_search(item.image.name + '.*' + item.image.tag ) == none

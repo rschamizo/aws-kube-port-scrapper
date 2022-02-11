@@ -1,0 +1,12 @@
+
+* xref:index.adoc[]
+* xref:node-port-scrapper.adoc[]
+* xref:master-scheduler.adoc[]
+* xref:alerting.adoc[]
+
+* Automation
+** xref:terraform.adoc[]
+** xref:ansible.adoc[]
+
+
+

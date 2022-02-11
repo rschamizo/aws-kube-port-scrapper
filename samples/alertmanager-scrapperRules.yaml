@@ -1,0 +1,65 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  labels:
+    app.kubernetes.io/component: alert-router
+    app.kubernetes.io/instance: main
+    app.kubernetes.io/name: alertmanager
+    app.kubernetes.io/part-of: kube-prometheus
+    app.kubernetes.io/version: 0.23.0
+    prometheus: k8s
+    role: alert-rules
+  name: alertmanager-scrapper-rules
+  namespace: monitoring
+spec:
+  groups:
+  - name: alertmanager.rules
+    rules:
+    - alert: ScrapperFrecuencyChanged
+      annotations:
+        description: The cron job {{ $labels.cronjob }} frequency has changed
+        summary: The cron job scraper-master has changed its frequency
+      expr: |
+        ((kube_cronjob_next_schedule_time - kube_cronjob_status_last_schedule_time) - (kube_cronjob_next_schedule_time offset 3m - kube_cronjob_status_last_schedule_time offset 3m)) != 0
+      labels:
+        application: scrapper
+    - alert: ScrapperCronJobMissing
+      annotations:
+        description: The cron job {{ $labels.cronjob }} is missing
+        summary: The cron job is missing
+      expr: |
+        absent(kube_cronjob_info{cronjob="scrapper-scheduler"})
+      labels:
+        application: scrapper
+    - alert: ScrapperMissingScheduled
+      annotations:
+        description: The last scrapper-scheduled job didn't run
+        summary: It was schedule, but it didn't run
+      expr: |
+        kube_cronjob_status_last_schedule_time - on(job) topk(1, kube_job_status_start_time{job_name=~"scrapper-scheduler-.*"}) != 0
+      labels:
+        application: scrapper
+    - alert: ScrapperJobFailed
+      annotations:
+        description: The scrapper job {{ $labels.job_name }} has failed
+        summary: An scrapper job has failed
+      expr: |
+        kubekube_job_failed{job_name=~"scrapper-.*"}
+      labels:
+        application: scrapper
+    - alert: ScrapperSchedulerTakeTooLong
+      annotations:
+        description: The scrapper-scheduler job {{ $labels.job_name }} take too long
+        summary: An scrapper scheduler job take too long
+      expr: |
+        stddev(kube_job_status_completion_time{job_name=~"scrapper-scheduler-.*"} - kube_job_status_start_time{job_name=~"scrapper-scheduler-.*"}) > 5
+      labels:
+        application: scrapper
+    - alert: ScrapperNodeTakeTooLong
+      annotations:
+        description: The scrapper-node job {{ $labels.job_name }} take too long
+        summary: An scrapper node job take too long
+      expr: |
+        stddev(kube_job_status_completion_time{job_name=~"scrapper-node-.*"} - kube_job_status_start_time{job_name=~"scrapper-node-.*"}) > 5
+      labels:
+        application: scrapper

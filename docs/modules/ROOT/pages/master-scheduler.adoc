@@ -1,0 +1,49 @@
+= Master Scrapper Sheduler
+
+This would be the brain of the whole operation. Like node-port-scrapper it imports a shell script, which it runs on startup.
+
+Centos has been chosen as the base image instead of alpine due to problems installing the AWS cli. The official AWS image has not been chosen because it requires a more complex flow than the image can provide. The image installs kubectl, aws-cli, jq, and yq.
+
+The pod has aws credentials mounted in the default path, ie $HOME/.aws/credentials, so it has access to AWS resources.
+
+First of all we have to create the secret with the aws credentials file that will be mounted on the pods. The user must have permissions both on the aws resources and to interact with the kubernetes cluster. For example, in the simplest way (It is not recommended to use the personal user, it is better to create a user with the appropriate permissions. The terraform module creates it with the appropriate permissions)
+
+[source,bash]
+....
+kubectl create secret generic aws-credentials --from-file=credentials=$HOME/.aws/credentials
+....
+
+With the help of environment variables you can disable this reporting to DynamoDB and s3, or define which existing resources they refer to. From here you can modify the ports ignored by the report, since it will template it in turn in the jobs of the node-port-scrapper
+
+To run the application you can use the provided example, having previously configured the environment variables to match the available resources.
+
+[source,bash]
+....
+kubectl create -f samples/cronjob-sample.yaml
+....
+
+It start by getting the credentials to interact with the cluster.
+
+[source,bash]
+----
+aws eks update-kubeconfig \
+  --region $AWS_REGION \
+  --name $CLUSTER_NAME
+----
+
+Then the manifest of the different jobs that are going to be created in each node is tempered. The Kubernetes API is used to get the name of each of the nodes. The jobs are created, and it is kept waiting until they finish executing. Once finished, the logs of said pods are consulted, and thus the json is obtained with the information of the ports of each node.
+
+This strategy has been used instead of shared storage since the solution is intended to be applicable to many different environments, some of them without persistence.
+
+In order to upload it to DynamoDB, a small adjustment must be made to the json. Seeing the complexity of these operations, it would be interesting to study doing the scripting part in python instead of shell when it comes to operating with sufficiently complex json.
+
+jq .map() function is very useful to replace an element with more complex ones that allow the json to be uploaded to DynamoDB. Supported data types are documented link:https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBMapper.DataTypes.html[DynamoDB Types]
+
+[source,bash]
+----
+jq -n 'reduce inputs as $s (.; .[input_filename] += {"ports": $s})' $(cat $nodesFile) > port-report-$currentDate.json
+----
+
+This operation allows us to combine each of the individual reports from each node, into a single report, by reading all the files at once.
+
+Finally, the report is uploaded to s3 and DynamoDB with the help of the aws cli.

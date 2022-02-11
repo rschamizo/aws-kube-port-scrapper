@@ -1,0 +1,51 @@
+= Node Port Scrapper
+
+Inside the folder we can find the Dockerfile, the script, and the example kubernetes manifest used to run the pod.
+
+The pod requires the following parameters within the container definition. This is because we are going to use the pod to enter the node itself.
+
+[source,yaml]
+----
+securityContext:
+    privileged: true
+hostNetwork: true
+hostPID: true
+----
+
+Because the pod has a very limited lifetime and does not interact with any external service, despite running with privileges, security should not be compromised.
+
+The image starts from an alpine, to which the shell script that will extract the report from the node is inserted. If you want to make any changes and upload it to dockerhub, you can use the following commands:
+
+[source,bash]
+....
+docker build . -t <usuario>/node-port-scrapper
+docker push <usuario>/node-port-scrapper
+....
+
+The base command that will extract the information is as follows:
+
+[source,bash]
+....
+netstat -tulpnl | grep LISTEN 
+....
+
+La informacion que devuelve es del siguiente tipo:
+
+....
+tcp        0      0 0.0.0.0:17500           0.0.0.0:*               LISTEN      4361/dropbox        
+tcp        0      0 127.0.0.1:16956         0.0.0.0:*               LISTEN      4457/keybase        
+tcp        0      0 127.0.0.1:17600         0.0.0.0:*               LISTEN      4361/dropbox   
+....
+
+To process the information, 'sed' will be used to perform text substitutions, awk to select elements from a given column, and 'jq' to perform operations on json objects.
+
+In the second loop presented in the script, it iterates through each of the lines of the previous output, and creates as many dicts (A collection of name/value pairs) as there are lines. Once out of the loop, we perform a grouping around the port number, combining all the information.
+
+The final result is to print the report on the screen in json format. This report will be extracted by the master-scrapper-scheduler when analyzing the logs of said pod.
+
+To perform a test, just run the following command:
+
+[source,bash]
+....
+kubectl create -f node-port-scrapper-sample.yaml
+....

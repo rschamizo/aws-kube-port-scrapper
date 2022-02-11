@@ -1,0 +1,75 @@
+---
+
+- name: Terraform >> Template providers file
+  ansible.builtin.template:
+    src: "{{ trf__template_providers_file }}"
+    dest: "{{ trf__files_path }}/providers.tf"
+
+- name: Terraform >> Template vars file
+  ansible.builtin.template:
+    src: "{{ trf__template_var_file }}"
+    dest: "{{ trf__files_path }}/variables-generated.tfvars"
+  register: trf__vars_templated
+
+- name: Terraform - Execute terraform module 
+  shell: terraform init && terraform apply -var-file variables-generated.tfvars -auto-approve
+  args:
+    chdir: ../terraform
+  when: trf__vars_templated.changed
+
+- name: Terraform - Get access_key_id of user {{ trf__user_list[0] }}
+  shell: "terraform output -json access_key_id | jq -r '.[\"{{ trf__user_list[0] }}\"]'"
+  args:
+    chdir: ../terraform
+  register: trf__access_key_id
+  changed_when: false
+
+- name: Terraform - Get access_key of user {{ trf__user_list[0] }}
+  shell: "terraform output -json access_key | jq -r '.[\"{{ trf__user_list[0] }}\"]' | base64 --decode | keybase pgp decrypt"
+  args:
+    chdir: ../terraform
+  register: trf__access_key
+  no_log: true
+  changed_when: false
+
+- name: Terraform - Get account_id
+  shell: "terraform output -json account_id | jq -r '.'"
+  args:
+    chdir: ../terraform
+  register: trf__account_id
+  changed_when: false
+
+- name: Terraform - Set access_key and access_key_id for other roles
+  set_fact:
+      dyn__access_key_id: "{{ trf__access_key_id.stdout }}"
+      dyn__access_key: "{{ trf__access_key.stdout }}"
+      dyn__account_id: "{{ trf__account_id.stdout }}"
+  no_log: true
+
+- name: Terraform - Get bucket_id
+  shell: "terraform output -json bucket_id | jq -r '.'"
+  args:
+    chdir: ../terraform
+  register: trf__bucket_id
+  changed_when: false
+  when: trf__bucket_creation | bool
+
+- name: Terraform - Set bucket_id for other roles
+  set_fact:
+      dyn__bucket_id: "{{ trf__bucket_id.stdout }}"
+  when: trf__bucket_creation | bool
+
+- name: Terraform - Get sns_topic_arn
+  shell: "terraform output -json sns_topic_arn | jq -r '.'"
+  args:
+    chdir: ../terraform
+  register: trf__sns_topic_arn
+  changed_when: false
+  when: trf__sns_creation | bool
+
+- name: Terraform - Set sns_topic_arn for other roles
+  set_fact:
+      dyn__sns_topic_arn: "{{ trf__sns_topic_arn.stdout }}"
+  when: trf__sns_creation | bool
+
+

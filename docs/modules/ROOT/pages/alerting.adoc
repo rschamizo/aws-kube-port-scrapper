@@ -1,0 +1,138 @@
+= Alerting
+
+For the design of the alerts we have tried to simplify the design as much as possible. That is why we have to depend on kube-state-metrics to get the metrics from which we can design the alerts. This product has a very refined integration with prometheus and alertmanager, which is why this solution has been chosen.
+
+On the other hand, for the notification the Simple Notification Service solution has been chosen for its simplicity.
+
+The deployment of prometheus has been done in 2 independent ways. On the one hand, prometheus-operator has been deployed, which allows native integration with Kubernetes, by being able to create alerts as CRD. The 6 alerts configured in this format are the following:
+
+[source,yaml]
+----
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  labels:
+    app.kubernetes.io/component: alert-router
+    app.kubernetes.io/instance: main
+    app.kubernetes.io/name: alertmanager
+    app.kubernetes.io/part-of: kube-prometheus
+    app.kubernetes.io/version: 0.23.0
+    prometheus: k8s
+    role: alert-rules
+  name: alertmanager-scrapper-rules
+  namespace: monitoring
+spec:
+  groups:
+  - name: alertmanager.rules
+    rules:
+    - alert: ScrapperFrecuencyChanged
+      annotations:
+        description: The cron job {{ $labels.cronjob }} frequency has changed
+        summary: The cron job scraper-master has changed its frequency
+      expr: |
+        ((kube_cronjob_next_schedule_time - kube_cronjob_status_last_schedule_time) - (kube_cronjob_next_schedule_time offset 3m - kube_cronjob_status_last_schedule_time offset 3m)) != 0
+      labels:
+        application: scrapper
+    - alert: ScrapperCronJobMissing
+      annotations:
+        description: The cron job {{ $labels.cronjob }} is missing
+        summary: The cron job is missing
+      expr: |
+        absent(kube_cronjob_info{cronjob="scrapper-scheduler"})
+      labels:
+        application: scrapper
+    - alert: ScrapperMissingScheduled
+      annotations:
+        description: The last scrapper-scheduled job didn't run
+        summary: It was schedule, but it didn't run
+      expr: |
+        kube_cronjob_status_last_schedule_time - on(job) topk(1, kube_job_status_start_time{job_name=~"scrapper-scheduler-.*"}) != 0
+      labels:
+        application: scrapper
+    - alert: ScrapperJobFailed
+      annotations:
+        description: The scrapper job {{ $labels.job_name }} has failed
+        summary: An scrapper job has failed
+      expr: |
+        kubekube_job_failed{job_name=~"scrapper-.*"}
+      labels:
+        application: scrapper
+    - alert: ScrapperSchedulerTakeTooLong
+      annotations:
+        description: The scrapper-scheduler job {{ $labels.job_name }} take too long
+        summary: An scrapper scheduler job take too long
+      expr: |
+        stddev(kube_job_status_completion_time{job_name=~"scrapper-scheduler-.*"} - kube_job_status_start_time{job_name=~"scrapper-scheduler-.*"}) > 5
+      labels:
+        application: scrapper
+    - alert: ScrapperNodeTakeTooLong
+      annotations:
+        description: The scrapper-node job {{ $labels.job_name }} take too long
+        summary: An scrapper node job take too long
+      expr: |
+        stddev(kube_job_status_completion_time{job_name=~"scrapper-node-.*"} - kube_job_status_start_time{job_name=~"scrapper-node-.*"}) > 5
+      labels:
+        application: scrapper
+
+----
+
+As can be seen, it depends on the following metrics:
+* kube_cronjob_next_schedule_time
+* kube_cronjob_status_last_schedule_time
+* kube_job_status_start_time
+* kube_cronjob_info
+* kube_job_status_completion_time
+* kube_job_status_start_time
+
+However, the deployment with the operator does not have a very up-to-date version with Helm Charts, and parameterization with the manifests option is more difficult, so it has been decided to install the usual prometheus through Helm Chart.
+
+First you must install the alertmanager configuration. There is an example in samples/alertmanager.yaml, where we should insert the AWS user credentials, before creating the secret, and configure the Sns topic (which is assumed previously created manually or with the terraform module). 
+
+Once the Sns Topic has been created, it is necessary to accept the subscription manually in the mailbox.
+
+[source,bash]
+....
+kubectl create secret generic alertmanager-main -n monitoring --from-file=alertmanager.yaml=samples/alertmanager.yaml
+....
+
+The installation of Prometheus can be done through helm with the following command:
+
+[source,bash]
+....
+helm install -n monitoring prometheus-k8s prometheus-community/prometheus --version 15.1.3 --values samples/prometheus-helm-values.yaml
+....
+
+The personalized alerts of the project are already included here. 
+
+You can choose to install the version with the operator with the following command (if not installed with helm)
+
+[source,bash]
+....
+kubectl create -f samples/prometheus-operator-mode
+....
+
+In both cases, information will be provided on how to access the applications. No type of ingress has been enabled for the same reason as storage, since the focus has been on it being able to run in many different environments.
+
+== ScrapperFrecuencyChanged
+
+The first alert checks that the cronjob frequency is not changed. This alert only looks at past and scheduled executions with a difference of 3 minutes, so at the slightest change, it will be on for 3 minutes. It has been done this way due to problems with the alertmanager when with another configuration that only detected the peaks, it was not able to send the alerts.
+
+== ScrapperCronJobMissing
+
+The second alert detects that the cronjob exists in the cluster. Otherwise send an alert.
+
+== ScrapperMissingScheduled
+
+The third alert checks if there have been any errors when scheduling the pod. This gives more guarantee that we analyze any eventuality
+
+== ScrapperJobFailed
+
+With this alert we detect that one of the jobs has failed, and in that case it must be notified.
+
+== ScrapperSchedulerTakeTooLong
+
+If the execution of a certain scheduler job is of the order of 5 times higher than the previous executions, it must be notified.
+
+== ScrapperNodeTakeTooLong
+
+Same alert as above for node-port-scrapper jobs

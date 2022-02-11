@@ -1,0 +1,7 @@
+  
+- name: Infra - Install packages - Ensure debian os packages are installed
+  apt:
+    name: "{{ item }}"
+    state: latest
+  loop: "{{ epi__debian_so_packages }}"
+
