@@ -40,9 +40,9 @@ netstat -tulpnl | grep LISTEN
 
 == Build Cronjob Application
 
-La aplicacion necesita credenciales de un usuario de AWS para funcionar. Despues permite elegir si subir el reporte a s3 y a una tabla de DynamoDB. Estas caracteristicas son opcionales, y se pueden deshabilitar. En el caso de habilitarse deben estar en la misma region todos los recursos.
+The application needs credentials of an AWS user to work. Then it allows you to choose whether to upload the report to s3 and to a DynamoDB table. These features are optional, and can be disabled. In the case of being enabled, all the resources must be in the same region.
 
-Antes de nada tenemos que crear el secreto con el fichero de credenciales de aws que sera montado en los pods. El usuario debe tener permisos tanto en los recursos de aws, como para interactuar con el cluster de kubernetes. Por ejemplo, en la forma mas sencilla (No es recomendable usar el usuario personal, es mejor crear un usuario con los permisos adecuados. El modulo de terraform lo crea con los permisos adecuados)
+First of all we have to create the secret with the aws credentials file that will be mounted on the pods. The user must have permissions both on the aws resources and to interact with the kubernetes cluster. For example, in the simplest way (It is not recommended to use the personal user, it is better to create a user with the appropriate permissions. The terraform module creates it with the appropriate permissions)
 
 [source,bash]
 ....
